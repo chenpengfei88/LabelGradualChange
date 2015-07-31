@@ -29,8 +29,9 @@ public class ScrollViewTab extends HorizontalScrollView {
     int move;
     int offset;
     boolean leftMove;
-    boolean isScroll;
     private int movePosition = 0;
+    View view;
+    int currnet;
 
     public ScrollViewTab(Context context) {
         super(context);
@@ -82,9 +83,9 @@ public class ScrollViewTab extends HorizontalScrollView {
     public void setViewPager(ViewPager viewPager){
         this.viewPager = viewPager;
         this.viewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
             @Override
             public void onPageScrolled(int i, float v, int i2) {
+                currnet = i;
                 if(movePosition != i){
                     offset = 0;
                     movePosition = i;
@@ -101,9 +102,9 @@ public class ScrollViewTab extends HorizontalScrollView {
                         }
                         offset = i2;
                     }
-                System.out.println("================="+i+"=======" + i2);
+
                 left = i * tabWidth + (int)(tabWidth*v);
-                View view = tabsContainer.getChildAt(i);
+                view = tabsContainer.getChildAt(i);
                 //移动的view
                 TextView ftextView = ((TextView)view.findViewById(R.id.fid));
                 TextView ftextViewTid = ((TextView)view.findViewById(R.id.cid));
@@ -144,32 +145,32 @@ public class ScrollViewTab extends HorizontalScrollView {
 
             @Override
             public void onPageSelected(int i) {
-                System.out.println("=============onPageSelected====="+i);
+                System.out.println("=============onPageSelected====="+i + "==" + leftMove);
                 if(leftMove)
                     i =i+1;
+//                if(count!=0 && i>=count-1){
+//                    if(!leftMove)
+//                        move+=plus;
+//                    else
+//                        move-=plus;
+//                    scroll(tabWidth);
+//                }
                 if(count!=0 && i>=count-1){
                     if(!leftMove)
-                        move+=1;
+                        scroll(tabWidth);
                     else
-                        move-=1;
-                    scroll(tabWidth * move);
+                        scroll(-tabWidth);
                 }
             }
 
             @Override
             public void onPageScrollStateChanged(int i) {
-                System.out.println("=============onPageScrollStateChanged===="+i);
-                if(i==1)
-                    isScroll = true;
-                else
-                    isScroll = false;
-
             }
         });
     }
 
     private void scroll(int tabWidth){
-        this.smoothScrollTo(tabWidth,0);
+        this.smoothScrollTo(getScrollX() + tabWidth,0);
     }
 
     public int dip2px(Context context, float dipValue){
@@ -188,7 +189,34 @@ public class ScrollViewTab extends HorizontalScrollView {
 
         @Override
         public void onClick(View v) {
-            viewPager.setCurrentItem(position);
+            if(position > currnet){
+                leftMove = false;
+            } else {
+                leftMove = true;
+            }
+            currnet = position;
+            TextView ftextView = ((TextView)view.findViewById(R.id.fid));
+            TextView ftextViewTid = ((TextView)view.findViewById(R.id.cid));
+            RelativeLayout.LayoutParams relativeLayoutOne = (RelativeLayout.LayoutParams)ftextView.getLayoutParams();
+            RelativeLayout.LayoutParams relativeLayoutTTidOne = (RelativeLayout.LayoutParams)ftextViewTid.getLayoutParams();
+            relativeLayoutOne.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+            relativeLayoutTTidOne.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+            relativeLayoutOne.removeRule(RelativeLayout.ALIGN_PARENT_LEFT);
+            relativeLayoutTTidOne.removeRule(RelativeLayout.ALIGN_PARENT_LEFT);
+            int left = (int) (dip2px(getContext(), 36));
+            ftextView.setPadding(-left, dip2px(getContext(), 10),0,0);
+            viewPager.setCurrentItem(position, false);
+            View viewTwo = tabsContainer.getChildAt(position);
+            TextView ftextViewTwo = ((TextView)viewTwo.findViewById(R.id.fid));
+            TextView ftextViewTwoTid = ((TextView)viewTwo.findViewById(R.id.cid));
+            ftextViewTwo.setVisibility(View.VISIBLE);
+            RelativeLayout.LayoutParams relativeLayout = (RelativeLayout.LayoutParams)ftextViewTwo.getLayoutParams();
+            RelativeLayout.LayoutParams relativeLayoutTTid = (RelativeLayout.LayoutParams)ftextViewTwoTid.getLayoutParams();
+            relativeLayout.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+            relativeLayoutTTid.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+            relativeLayout.removeRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+            relativeLayoutTTid.removeRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+            ftextViewTwo.setPadding(0, dip2px(getContext(), 10),0,0);
         }
     }
 }
