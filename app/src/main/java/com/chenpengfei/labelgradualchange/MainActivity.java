@@ -21,10 +21,8 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
-        Intent intent = getIntent();
-        //System.out.println("========activity=====" + getIntent().toString()+ "==="+intent.get);
         ScrollViewTab scrollViewTab = (ScrollViewTab) findViewById(R.id.scroll_view_id);
-        String[] array = {"音乐", "互联", "科技","财经" , "娱乐", "体育","股票","健康","搞笑", "热门"};
+        String[] array = {"音乐", "互联网", "科技", "正能量","财经" , "娱乐", "体育","股票","健康","搞笑", "热门"};
         scrollViewTab.initData(MainActivity.this, array, getScreenWidth(), getLayoutInflater());
         //pager
         ViewPager viewPager = (ViewPager) findViewById(R.id.pager);

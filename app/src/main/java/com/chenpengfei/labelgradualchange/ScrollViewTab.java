@@ -3,7 +3,6 @@ package com.chenpengfei.labelgradualchange;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.os.Build;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
@@ -24,14 +23,12 @@ public class ScrollViewTab extends HorizontalScrollView {
     private int tabWidth = 220;
     private int count;
     private Paint mPaint;
-    private int left;
     private ViewPager viewPager;
-    int move;
-    int offset;
+    private int offset;
     boolean leftMove;
     private int movePosition = 0;
-    View view;
-    int currnet;
+    private View view;
+    private int currentPosition;
 
     public ScrollViewTab(Context context) {
         super(context);
@@ -64,20 +61,38 @@ public class ScrollViewTab extends HorizontalScrollView {
             count = screenWidth / tabWidth;
         }
         //tab
-        for(int i = 0; i<array.length; i++){
+        for(int i = 0; i < array.length; i++){
             View itemView = lf.inflate(R.layout.title_item, null);
             if(i == 0){
-                itemView.findViewById(R.id.fid).setVisibility(View.VISIBLE);
+                itemView.findViewById(R.id.cover_tab_text).setVisibility(View.VISIBLE);
             }
+            //设置整个item的宽度
             itemView.setLayoutParams(new ViewGroup.LayoutParams(tabWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
-            ((TextView)itemView.findViewById(R.id.cid)).setText(array[i]);
-            ((TextView)itemView.findViewById(R.id.fid)).setText(array[i]);
+            //设置tab textview 内容
+            TextView tabText = (TextView) itemView.findViewById(R.id.tab_text);
+            tabText.setText(array[i]);
+            ((TextView)itemView.findViewById(R.id.cover_tab_text)).setText(array[i]);
             if(itemView.getParent()!=null)
                 ((ViewGroup)itemView.getParent()).removeAllViews();
+            //设置内容RelativeLayoutitem的宽度
+            RelativeLayout relativeLayout = (RelativeLayout) itemView.findViewById(R.id.relativelayout_id);
+            LinearLayout.LayoutParams rf = (LinearLayout.LayoutParams) relativeLayout.getLayoutParams();
+            rf.width = measureViewWidthOrHeight(relativeLayout);
+            tabText.setTag(rf.width);
             itemView.setOnClickListener(new TabOnClickListener(i));
             tabsContainer.addView(itemView);
         }
         addView(tabsContainer);
+    }
+
+    public int measureViewWidthOrHeight(View view){
+        int w = View.MeasureSpec.makeMeasureSpec(0,
+                View.MeasureSpec.UNSPECIFIED);
+        int h = View.MeasureSpec.makeMeasureSpec(0,
+                View.MeasureSpec.UNSPECIFIED);
+        view.measure(w, h);
+        int width = view.getMeasuredWidth();
+        return  width;
     }
 
     public void setViewPager(ViewPager viewPager){
@@ -85,84 +100,57 @@ public class ScrollViewTab extends HorizontalScrollView {
         this.viewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int i, float v, int i2) {
-                currnet = i;
+                currentPosition = i;
                 if(movePosition != i){
                     offset = 0;
                     movePosition = i;
                  }
-                if(v>0.9)
-                    v=1.0f;
-                    if (offset == 0) {
-                        offset = i2;
+                if(v > 0.9)
+                    v = 1.0f;
+                if(offset!=0){
+                    if (i2 > offset) {
+                        leftMove = false;
                     } else {
-                        if (i2 > offset) {
-                            leftMove = false;
-                        } else {
-                            leftMove = true;
-                        }
-                        offset = i2;
+                        leftMove = true;
                     }
-
-                left = i * tabWidth + (int)(tabWidth*v);
+                }
+                offset = i2;
                 view = tabsContainer.getChildAt(i);
                 //移动的view
-                TextView ftextView = ((TextView)view.findViewById(R.id.fid));
-                TextView ftextViewTid = ((TextView)view.findViewById(R.id.cid));
-                RelativeLayout.LayoutParams relativeLayoutOne = (RelativeLayout.LayoutParams)ftextView.getLayoutParams();
-                RelativeLayout.LayoutParams relativeLayoutTTidOne = (RelativeLayout.LayoutParams)ftextViewTid.getLayoutParams();
-                relativeLayoutOne.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-                relativeLayoutTTidOne.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-                relativeLayoutOne.removeRule(RelativeLayout.ALIGN_PARENT_LEFT);
-                relativeLayoutTTidOne.removeRule(RelativeLayout.ALIGN_PARENT_LEFT);
-                int left = (int) (dip2px(getContext(), 36)* v);
-                ftextView.setPadding(-left, dip2px(getContext(), 10),0,0);
+                TextView coverTabText = ((TextView)view.findViewById(R.id.cover_tab_text));
+                TextView tabText = ((TextView)view.findViewById(R.id.tab_text));
+                addOrRemoveRule(coverTabText, tabText, true, RelativeLayout.ALIGN_PARENT_RIGHT);
+                addOrRemoveRule(coverTabText, tabText, false, RelativeLayout.ALIGN_PARENT_LEFT);
+                int left = (int) ((int)tabText.getTag() * v);
+                coverTabText.setPadding(- left, dip2px(getContext(), 10),0,0);
 
                 View viewTwo = tabsContainer.getChildAt(i + 1);
                 if(viewTwo == null)
                     return;
-                TextView ftextViewTwo = ((TextView)viewTwo.findViewById(R.id.fid));
-                TextView ftextViewTwoTid = ((TextView)viewTwo.findViewById(R.id.cid));
-                if(ftextViewTwo.getVisibility() == View.GONE){
-                    ftextViewTwo.setVisibility(View.VISIBLE);
-                    RelativeLayout.LayoutParams relativeLayout = (RelativeLayout.LayoutParams)ftextViewTwo.getLayoutParams();
-                    RelativeLayout.LayoutParams relativeLayoutTTid = (RelativeLayout.LayoutParams)ftextViewTwoTid.getLayoutParams();
-                    relativeLayout.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-                    relativeLayoutTTid.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-                    relativeLayout.removeRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-                    relativeLayoutTTid.removeRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-                    ftextViewTwo.setPadding(0, dip2px(getContext(), 10),-dip2px(getContext(), 36),0);
+                TextView coverTwoTabText = ((TextView) viewTwo.findViewById(R.id.cover_tab_text));
+                TextView tabTwoText = ((TextView) viewTwo.findViewById(R.id.tab_text));
+                int leftTwo = 0;
+                if(coverTwoTabText.getVisibility() == View.GONE){
+                    coverTwoTabText.setVisibility(View.VISIBLE);
                 }else {
-                    RelativeLayout.LayoutParams relativeLayout = (RelativeLayout.LayoutParams)ftextViewTwo.getLayoutParams();
-                    RelativeLayout.LayoutParams relativeLayoutTTid = (RelativeLayout.LayoutParams)ftextViewTwoTid.getLayoutParams();
-                    relativeLayout.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-                    relativeLayoutTTid.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-                    relativeLayout.removeRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-                    relativeLayoutTTid.removeRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-                    int leftTwo = (int) (dip2px(getContext(), 36) * v);
-                    ftextViewTwo.setPadding(0, dip2px(getContext(), 10),-dip2px(getContext(), 36) +leftTwo ,0);
+                    leftTwo = (int) ((int)tabTwoText.getTag() * v);
                 }
+                addOrRemoveRule(coverTwoTabText, tabTwoText, false, RelativeLayout.ALIGN_PARENT_RIGHT);
+                addOrRemoveRule(coverTwoTabText, tabTwoText, true, RelativeLayout.ALIGN_PARENT_LEFT);
+                coverTwoTabText.setPadding(0, dip2px(getContext(), 10), - (int)tabTwoText.getTag() + leftTwo ,0);
             }
 
             @Override
             public void onPageSelected(int i) {
-                System.out.println("=============onPageSelected====="+i + "==" + leftMove);
                 if(leftMove)
-                    i =i+1;
-//                if(count!=0 && i>=count-1){
-//                    if(!leftMove)
-//                        move+=plus;
-//                    else
-//                        move-=plus;
-//                    scroll(tabWidth);
-//                }
-                if(count!=0 && i>=count-1){
+                    i = i + 1;
+                if(count!=0 && i >= count-1){
                     if(!leftMove)
                         scroll(tabWidth);
                     else
                         scroll(-tabWidth);
                 }
             }
-
             @Override
             public void onPageScrollStateChanged(int i) {
             }
@@ -171,6 +159,18 @@ public class ScrollViewTab extends HorizontalScrollView {
 
     private void scroll(int tabWidth){
         this.smoothScrollTo(getScrollX() + tabWidth,0);
+    }
+
+    private void addOrRemoveRule(TextView textView, TextView coverTextView, boolean isAdd, int rule){
+        RelativeLayout.LayoutParams textlf = (RelativeLayout.LayoutParams)textView.getLayoutParams();
+        RelativeLayout.LayoutParams coverTextlf = (RelativeLayout.LayoutParams)coverTextView.getLayoutParams();
+        if(isAdd){
+            textlf.addRule(rule);
+            coverTextlf.addRule(rule);
+        } else {
+            textlf.removeRule(rule);
+            coverTextlf.removeRule(rule);
+        }
     }
 
     public int dip2px(Context context, float dipValue){
@@ -189,34 +189,27 @@ public class ScrollViewTab extends HorizontalScrollView {
 
         @Override
         public void onClick(View v) {
-            if(position > currnet){
+            if(position > currentPosition){
                 leftMove = false;
             } else {
                 leftMove = true;
             }
-            currnet = position;
-            TextView ftextView = ((TextView)view.findViewById(R.id.fid));
-            TextView ftextViewTid = ((TextView)view.findViewById(R.id.cid));
-            RelativeLayout.LayoutParams relativeLayoutOne = (RelativeLayout.LayoutParams)ftextView.getLayoutParams();
-            RelativeLayout.LayoutParams relativeLayoutTTidOne = (RelativeLayout.LayoutParams)ftextViewTid.getLayoutParams();
-            relativeLayoutOne.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-            relativeLayoutTTidOne.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-            relativeLayoutOne.removeRule(RelativeLayout.ALIGN_PARENT_LEFT);
-            relativeLayoutTTidOne.removeRule(RelativeLayout.ALIGN_PARENT_LEFT);
-            int left = (int) (dip2px(getContext(), 36));
-            ftextView.setPadding(-left, dip2px(getContext(), 10),0,0);
+            currentPosition = position;
+            TextView converTabText = ((TextView)view.findViewById(R.id.cover_tab_text));
+            TextView tabText = ((TextView)view.findViewById(R.id.tab_text));
+            addOrRemoveRule(converTabText, tabText, true, RelativeLayout.ALIGN_PARENT_RIGHT);
+            addOrRemoveRule(converTabText, tabText, false, RelativeLayout.ALIGN_PARENT_LEFT);
+            int left = (int)tabText.getTag();
+            converTabText.setPadding(-left, dip2px(getContext(), 10),0,0);
             viewPager.setCurrentItem(position, false);
+
             View viewTwo = tabsContainer.getChildAt(position);
-            TextView ftextViewTwo = ((TextView)viewTwo.findViewById(R.id.fid));
-            TextView ftextViewTwoTid = ((TextView)viewTwo.findViewById(R.id.cid));
-            ftextViewTwo.setVisibility(View.VISIBLE);
-            RelativeLayout.LayoutParams relativeLayout = (RelativeLayout.LayoutParams)ftextViewTwo.getLayoutParams();
-            RelativeLayout.LayoutParams relativeLayoutTTid = (RelativeLayout.LayoutParams)ftextViewTwoTid.getLayoutParams();
-            relativeLayout.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-            relativeLayoutTTid.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-            relativeLayout.removeRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-            relativeLayoutTTid.removeRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-            ftextViewTwo.setPadding(0, dip2px(getContext(), 10),0,0);
+            TextView coverTwoTabText = ((TextView)viewTwo.findViewById(R.id.cover_tab_text));
+            TextView tabTwoText = ((TextView)viewTwo.findViewById(R.id.tab_text));
+            coverTwoTabText.setVisibility(View.VISIBLE);
+            addOrRemoveRule(coverTwoTabText, tabTwoText, false, RelativeLayout.ALIGN_PARENT_RIGHT);
+            addOrRemoveRule(coverTwoTabText, tabTwoText, true, RelativeLayout.ALIGN_PARENT_LEFT);
+            coverTwoTabText.setPadding(0, dip2px(getContext(), 10),0,0);
         }
     }
 }
